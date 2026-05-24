@@ -35,7 +35,7 @@
 
 ```bash
 # 1. Склонируйте репозиторий
-git clone https://github.com/Envel-Nikita-Gutsenkov/DiplomSoft2.git
+git clone https://github.com/Envel-Nikita-Gutsenkov/Diplom-public.git
 cd DiplomSoft2
 
 # 2. Запустите единый скрипт настройки
