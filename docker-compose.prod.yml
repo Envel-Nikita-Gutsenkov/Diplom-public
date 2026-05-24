@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: olympiad_db_prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - .env
+    volumes:
+      - db_data_prod:/var/lib/postgresql/data
+    networks:
+      - olympiad_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+    restart: always
+
+  app:
+    build: .
+    container_name: olympiad_app_prod
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      - AUTH_SECRET=${AUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - AUTH_TRUST_HOST=true
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - olympiad_net
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - backups_prod:/app/backups
+    # Не монтируем текущую папку! В проде код уже лежит внутри образа.
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/login || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          # Лимиты для защиты от DoS
+          cpus: '2'
+          memory: 1024M
+    restart: always
+
+networks:
+  olympiad_net:
+    internal: false
+
+volumes:
+  db_data_prod:
+  backups_prod:

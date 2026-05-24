@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String       @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role         @default(USER)
+  group         String?
+  labels        String[]     @default([])
+  tags          String[]     @default([])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  accounts      Account[]
+  results       Result[]
+  sessions      Session[]
+  submissions   Submission[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Olympiad {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  duration    Int?     
+  isActive    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  colorTheme        String?
+  emoji             String?
+  preventCopyPaste  Boolean  @default(false)
+  preventBlur       Boolean  @default(false)
+  shuffleTasks      Boolean  @default(false)
+  results           Result[]
+  tasks             Task[]
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  content     String
+  points      Int
+  olympiadId  String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  submissions Submission[]
+  olympiad    Olympiad     @relation(fields: [olympiadId], references: [id], onDelete: Cascade)
+}
+
+model Submission {
+  id        String   @id @default(cuid())
+  userId    String
+  taskId    String
+  answer    String
+  isCorrect Boolean?
+  score     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  violations String[] @default([])
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Result {
+  id          String    @id @default(cuid())
+  userId      String
+  olympiadId  String
+  totalScore  Int       @default(0)
+  rank        Int?
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  isSubmitted Boolean   @default(false)
+  violations  String[]  @default([])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  olympiad    Olympiad  @relation(fields: [olympiadId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GlobalSettings {
+  id                  String   @id @default("singleton")
+  registrationEnabled Boolean  @default(true)
+  autoBackupEnabled   Boolean  @default(false)
+  lastBackupAt        DateTime?
+  backupCount         Int      @default(10)
+  updatedAt           DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}

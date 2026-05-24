@@ -1,0 +1,86 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: olympiad_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: olympiad
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - olympiad_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d olympiad"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+    restart: always
+
+  app:
+    build:
+      context: .
+      target: development
+    container_name: olympiad_app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/olympiad?schema=public
+      - AUTH_SECRET=supersecret-random-string-change-me-in-prod
+      - NEXTAUTH_URL=http://localhost:3000
+      - AUTH_TRUST_HOST=true
+      - WATCHPACK_POLLING=true
+      - NODE_OPTIONS=--max-old-space-size=4096
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - olympiad_net
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - .:/app
+      # This volume "shields" the container's node_modules from being overwritten by Windows binaries
+      - node_modules:/app/node_modules
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4096M
+    restart: always
+    command: ["sh", "-c", "rm -f proxy.ts && set -e && sleep 2 && npx prisma generate && npx tsc --noEmit && prisma migrate deploy && tsx prisma/seed.ts && npm run dev"]
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.50.1-noble
+    container_name: olympiad_e2e
+    environment:
+      - BASE_URL=http://app:3000
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - olympiad_net
+    volumes:
+      - ./tests:/e2e/tests:ro
+      - ./playwright.config.ts:/e2e/playwright.config.ts:ro
+      - ./playwright:/e2e/playwright
+    working_dir: /e2e
+    command: >
+      sh -c "npm init -y && npm install @playwright/test@1.50.1 playwright@1.50.1 && npx playwright test"
+    profiles:
+      - testing
+
+networks:
+  olympiad_net:
+    internal: false
+
+volumes:
+  db_data:
+  node_modules:
