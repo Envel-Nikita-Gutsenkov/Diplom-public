@@ -36,7 +36,7 @@
 ```bash
 # 1. Склонируйте репозиторий
 git clone https://github.com/Envel-Nikita-Gutsenkov/Diplom-public.git
-cd DiplomSoft2
+cd Diplom-public
 
 # 2. Запустите единый скрипт настройки
 # Скрипт сам создаст .env, выпустит SSL через Let's Encrypt и настроит Nginx
