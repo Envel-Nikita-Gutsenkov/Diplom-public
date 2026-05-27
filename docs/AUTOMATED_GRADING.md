@@ -27,8 +27,8 @@
 graph TD
     UI[Интерфейс участника / админа]
     Executor[code-executor.ts]
-    Worker[python-worker.js (Web Worker)]
-    Pyodide[Pyodide Engine (WASM)]
+    Worker["python-worker.js (Web Worker)"]
+    Pyodide["Pyodide Engine (WASM)"]
     
     UI -->|Исходный код + Тест-кейсы| Executor
     Executor -->|Асинхронный запуск| Worker

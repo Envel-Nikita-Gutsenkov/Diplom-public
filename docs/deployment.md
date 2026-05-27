@@ -14,8 +14,8 @@
 
 ```bash
 # 1. Склонируйте репозиторий
-git clone https://github.com/Envel-Nikita-Gutsenkov/DiplomSoft2.git
-cd DiplomSoft2
+git clone https://github.com/Envel-Nikita-Gutsenkov/Diplom-public.git
+cd Diplom-public
 
 # 2. Подготовьте переменные окружения
 cp .env.example .env
